@@ -44,11 +44,6 @@ fn main() {
             .long("num_players")
             .takes_value(true)
             .help("The number of players/agents"))
-        .arg(Arg::with_name("iterations")
-            .short("i")
-            .long("iterations")
-            .takes_value(true)
-            .help("The number of iterations to run of the simulation."))
         .get_matches();
 
     log::info!("Starting up Tag Simulator.");
