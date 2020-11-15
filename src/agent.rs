@@ -1,7 +1,7 @@
 use crate::tag_environment::TagEnvironment;
-use crate::action::Action;
-use crate::position::Position;
+use crate::action::{Action};
 use rand::{thread_rng, Rng};
+use iced::Point;
 
 /// A simplistic agent for playing tag.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -9,10 +9,9 @@ pub struct Agent {
     pub id: usize,
     pub is_it: bool,
     pub last_tagged: usize,
-    pub position_x: f64,
-    pub position_y: f64,
-    pub speed: f64,
-    pub reach: f64,
+    pub position: Point,
+    pub speed: f32,
+    pub reach: f32,
 }
 
 impl Agent {
@@ -25,34 +24,39 @@ impl Agent {
 
         if self.is_it {
             for agent in &env.agents {
-                // TODO clean this up
                 if !agent.is_it && agent.id != self.id &&
-                    agent.id != self.last_tagged && self.distance(*agent) <= self.reach {
+                    agent.id != self.last_tagged &&
+                    self.distance(*agent) <= self.reach {
                     return Action::Tag(agent.id)
                 }
             }
         }
 
-        let x_new = thread_rng().gen_range(f64::max(0.0, self.position_x - self.speed), f64::min(env.width, self.position_x + self.speed));
-        let remaining = (x_new - self.position_x).abs();
-        let y_new = thread_rng().gen_range(f64::max(0.0, self.position_y - remaining), f64::min(env.height, self.position_y + remaining));
-
-        Action::Move(Position {
-            x: x_new,
-            y: y_new
-        })
+        self.random_move(env)
     }
 
     /// Updates the position of an agent.
-    pub fn update(&mut self, position: &Position) {
-        self.position_x = position.x;
-        self.position_y = position.y;
+    pub fn update(&mut self, position: &Point) {
+        self.position = *position;
     }
 
     /// Cartesian distance between two agents.
-    fn distance(&self, other: Agent) -> f64 {
-        return ((self.position_x - other.position_x).abs().powf(2.) + (self.position_y - other.position_y).abs().powf(2.)).sqrt()
+    fn distance(&self, other: Agent) -> f32 {
+        return ((self.position.x - other.position.x).abs().powf(2.) + (self.position.y - other.position.y).abs().powf(2.)).sqrt()
     }
+
+    /// Create and return a move action in a random direction.
+    fn random_move(&self, env: &TagEnvironment) -> Action {
+        let t: f32 = thread_rng().gen::<f32>() * std::f32::consts::PI * 2.0;
+        let u: f32 = thread_rng().gen::<f32>() + thread_rng().gen::<f32>();
+        let r = if u > 1.0 { 1.0 - u } else { u };
+        let x = r * t.cos() * self.speed;
+        let y = r * t.sin() * self.speed;
+        Action::Move(Point {
+            x: f32::max(0.0, f32::min(env.width, self.position.x + x)),
+            y: f32::max(0.0, f32::min(env.height, self.position.y + y)),
+        })
+     }
 
 }
 
@@ -62,8 +66,9 @@ mod tests {
     use crate::tag_environment::TagEnvironment;
     use dashmap::DashMap;
     use crate::agent::Agent;
-    use crate::action::Action;
+    use crate::action::{Action};
     use crate::action::Action::Tag;
+    use iced::Point;
 
     #[test]
     fn no_tag_backs() {
@@ -76,8 +81,10 @@ mod tests {
             id: 1,
             is_it: true,
             last_tagged: 1,
-            position_x: 0.0,
-            position_y: 0.0,
+            position: Point {
+                x: 0.0,
+                y: 0.0
+            },
             speed: 2.0,
             reach: 2.0
         };
@@ -85,8 +92,10 @@ mod tests {
             id: 2,
             is_it: false,
             last_tagged: 2,
-            position_x: 0.0,
-            position_y: 0.0,
+            position: Point {
+                x: 0.0,
+                y: 0.0
+            },
             speed: 2.0,
             reach: 2.0
         };

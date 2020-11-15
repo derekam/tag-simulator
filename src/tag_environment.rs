@@ -3,11 +3,14 @@ use crate::action::Action;
 use crate::environment::Environment;
 use crate::agent::Agent;
 use std::borrow::Borrow;
+use iced::{canvas, Point, Color, HorizontalAlignment, VerticalAlignment};
+use iced::canvas::Path;
 
+#[derive(Debug, Clone)]
 pub struct TagEnvironment {
     pub(crate) agents: DashMap<usize, Agent>,
-    pub(crate) width: f64,
-    pub(crate) height: f64,
+    pub(crate) width: f32,
+    pub(crate) height: f32,
 }
 
 impl Environment<Action, Agent> for TagEnvironment {
@@ -33,7 +36,7 @@ impl Environment<Action, Agent> for TagEnvironment {
                 self.agents.get_mut(&agent).unwrap().is_it = false;
                 self.agents.get_mut(&other).unwrap().last_tagged = agent;
                 self.agents.get_mut(&other).unwrap().is_it = true;
-                log::debug!("Agent {:?} has tagged agent {:?}.", agent, other)
+                log::info!("Agent {:?} has tagged agent {:?}.", agent, other)
             }
             Action::Move(position) => {
                 self.agents.get_mut(&agent).unwrap().update(position);
@@ -47,15 +50,46 @@ impl Environment<Action, Agent> for TagEnvironment {
         }
     }
 
-    fn render(&mut self) {
-        // TODO either here or as part of Simulation.
-    }
+}
 
-    fn shutdown(&mut self) {
-        self.reset();
+impl canvas::Drawable for TagEnvironment {
+
+    fn draw(&self, frame: &mut canvas::Frame) {
+
+        let space = Path::rectangle(Point::new(0.0, 0.0), frame.size());
+
+        let tagged_agents = Path::new(|path| {
+            for agent in &self.agents {
+                frame.fill_text(canvas::Text {
+                    content: agent.id.to_string(),
+                    position: agent.position,
+                    horizontal_alignment: HorizontalAlignment::Center,
+                    vertical_alignment: VerticalAlignment::Center,
+                    size: 15.0,
+                    ..canvas::Text::default()
+                });
+                if agent.is_it {
+                    path.circle(agent.position, agent.reach);
+                }
+            }
+        });
+
+        let agents = Path::new(|path| {
+            for agent in &self.agents {
+                if !agent.is_it {
+                   path.circle(agent.position, agent.reach);
+                }
+            }
+        });
+
+        frame.fill(&space, Color::BLACK);
+        frame.fill(&agents, Color::WHITE);
+        frame.fill(&tagged_agents, Color::from_rgb8(0xF9, 0xD7, 0x1C));
+
     }
 
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -64,6 +98,7 @@ mod tests {
     use crate::agent::Agent;
     use crate::environment::Environment;
     use crate::action::Action;
+    use iced::Point;
 
     #[test]
     fn can_setup_env() {
@@ -73,8 +108,10 @@ mod tests {
             id: 2,
             is_it: true,
             last_tagged: 1,
-            position_x: 1.5,
-            position_y: 1.0,
+            position: Point {
+                x: 1.5,
+                y: 1.0,
+            },
             speed: 1.0,
             reach: 2.0
         };
@@ -84,7 +121,6 @@ mod tests {
         assert_eq!(agent2_dupe, new_agent);
         env.reset();
         assert_eq!(0, env.agents.len());
-        env.shutdown();
     }
 
     #[test]
@@ -95,7 +131,6 @@ mod tests {
             actions.insert(agent, env.agents.get(&agent).unwrap().act(&env));
         }
         env.step_all(actions);
-        env.render();
         assert_ne!(true, env.agents.get(&0).unwrap().is_it);
     }
 
@@ -109,8 +144,10 @@ mod tests {
             id: 0,
             is_it: true,
             last_tagged: 0,
-            position_x: 0.0,
-            position_y: 0.0,
+            position: Point {
+                x: 0.0,
+                y: 0.0,
+            },
             speed: 2.0,
             reach: 2.0
         };
@@ -118,8 +155,10 @@ mod tests {
             id: 1,
             is_it: false,
             last_tagged: 1,
-            position_x: 0.5,
-            position_y: 0.5,
+            position: Point {
+                x: 0.5,
+                y: 0.5,
+            },
             speed: 2.0,
             reach: 2.0
         };
@@ -127,8 +166,10 @@ mod tests {
             id: 2,
             is_it: false,
             last_tagged: 2,
-            position_x: 1.0,
-            position_y: 1.0,
+            position: Point {
+                x: 1.0,
+                y: 1.0,
+            },
             speed: 2.0,
             reach: 2.0
         };

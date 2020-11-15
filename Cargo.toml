@@ -11,7 +11,6 @@ env_logger = "0.8"
 dashmap = "3.11.10"
 clap = "2.33.3"
 rand = { version = "0.7", default-features = false }
-iced = { version = "0.1.1", features = ["canvas", "tokio", "debug"] }
-tokio = { version = "0.2", features = ["blocking"] }
-itertools = "0.9"
-rustc-hash = "1.1"
+iced = { version = "0.1.1", features = ["canvas", "tokio", "debug", "async-std"] }
+iced_native = { version = "0.2.2" }
+async-std = { version = "1.0", features = ["unstable"] }

@@ -1,7 +1,7 @@
-use crate::position::Position;
+use iced::Point;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Action {
     Tag(usize),
-    Move(Position)
+    Move(Point)
 }

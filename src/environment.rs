@@ -9,8 +9,4 @@ pub trait Environment<ACTION, AGENT> {
 
     fn step_all(&mut self, actions: Vec<ACTION>);
 
-    fn render(&mut self);
-
-    fn shutdown(&mut self);
-
 }

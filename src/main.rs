@@ -5,11 +5,13 @@ use std::fmt::Debug;
 
 mod agent;
 mod environment;
-mod position;
 mod tag_environment;
 mod action;
 mod parameters;
 mod simulation;
+mod iced_ui;
+mod controls;
+mod time;
 
 fn main() {
     env_logger::init();
@@ -59,12 +61,8 @@ fn main() {
         num_players: extract("num_players", &matches, DEFAULT_PARAMS.num_players)
     };
 
-    let iterations: u128 = extract("iterations", &matches, 0);
+    Simulation::run_gui(parameters);
 
-    let mut simulation: Simulation = Simulation::new(parameters);
-    let num_steps: Option<u128> = if iterations == 0 { Option::None } else { Option::Some(iterations) };
-    simulation.run(num_steps);
-    simulation.stop();
 }
 
 fn extract<TYPE: Debug + std::str::FromStr>(name: &str, args: &ArgMatches, default: TYPE) -> TYPE {

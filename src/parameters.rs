@@ -18,11 +18,11 @@ pub struct TagParams {
 
 }
 
-const SPEED: f64 = 2.0;
-const PROXIMITY: f64 = 1.0;
-const WIDTH: u64 = 50;
-const HEIGHT: u64 = 50;
-const NUM_PLAYERS: usize = 10;
+const SPEED: f64 = 5.0;
+const PROXIMITY: f64 = 15.0;
+const WIDTH: u64 = 1000;
+const HEIGHT: u64 = 600;
+const NUM_PLAYERS: usize = 50;
 
 pub(crate) const DEFAULT_PARAMS: TagParams = TagParams {
     speed: SPEED,
