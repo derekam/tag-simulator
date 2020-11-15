@@ -39,6 +39,8 @@ impl<X: Agent + 'static> Simulation<X> {
                         agents: DashMap::with_capacity(parameters.speed as usize),
                         width: parameters.width as f32,
                         height: parameters.height as f32,
+                        it: 0,
+                        show_numbers: parameters.numbered,
                     },
                     is_running: false,
                     controls: Controls::default(),
@@ -102,6 +104,8 @@ mod tests {
     use crate::simulation::Simulation;
     use crate::agents::agent_type::AgentType;
     use crate::agents::agent::{Player};
+    use crate::agents::basic_directional::DirectionalAgent;
+    use test::Bencher;
 
     #[test]
     fn test_basic_functionality() {
@@ -111,7 +115,8 @@ mod tests {
             width: 100,
             height: 100,
             num_players: 5,
-            agent_type: AgentType::Default
+            agent_type: AgentType::Default,
+            numbered: false
         };
         let mut sim: Simulation<Player> = Simulation::new(params);
         assert_eq!(sim.is_running, false);
@@ -121,6 +126,92 @@ mod tests {
         let agent = sim.environment.agents.get(&0).unwrap().value().clone();
         sim.run_headless(Option::from(10));
         assert_ne!(agent.position, sim.environment.agents.get(&0).unwrap().position);
+    }
+
+    #[bench]
+    fn bench_headless_500_directional(b: &mut Bencher) {
+        let params: TagParams = TagParams {
+            speed: 5.0,
+            proximity: 2.0,
+            width: 1000,
+            height: 600,
+            num_players: 500,
+            agent_type: AgentType::BasicDirectional,
+            numbered: false
+        };
+        let mut sim: Simulation<DirectionalAgent> = Simulation::new(params);
+        b.iter(|| {
+            sim.step();
+        });
+    }
+
+    #[bench]
+    fn bench_headless_5000_directional(b: &mut Bencher) {
+        let params: TagParams = TagParams {
+            speed: 5.0,
+            proximity: 2.0,
+            width: 1000,
+            height: 600,
+            num_players: 5000,
+            agent_type: AgentType::BasicDirectional,
+            numbered: false
+        };
+        let mut sim: Simulation<DirectionalAgent> = Simulation::new(params);
+        b.iter(|| {
+            sim.step();
+        });
+    }
+
+    #[bench]
+    fn bench_headless_500_default(b: &mut Bencher) {
+        let params: TagParams = TagParams {
+            speed: 5.0,
+            proximity: 2.0,
+            width: 1000,
+            height: 600,
+            num_players: 500,
+            agent_type: AgentType::Default,
+            numbered: false
+        };
+        let mut sim: Simulation<Player> = Simulation::new(params);
+        b.iter(|| {
+            sim.step();
+        });
+    }
+
+
+    #[bench]
+    fn bench_headless_5000_default(b: &mut Bencher) {
+        let params: TagParams = TagParams {
+            speed: 5.0,
+            proximity: 2.0,
+            width: 1000,
+            height: 600,
+            num_players: 5000,
+            agent_type: AgentType::Default,
+            numbered: false
+        };
+        let mut sim: Simulation<Player> = Simulation::new(params);
+        b.iter(|| {
+            sim.step();
+        });
+    }
+
+    #[bench]
+    fn bench_headless_50000_default(b: &mut Bencher) {
+        let params: TagParams = TagParams {
+            speed: 5.0,
+            proximity: 2.0,
+            width: 1000,
+            height: 600,
+            num_players: 50000,
+            agent_type: AgentType::Default,
+            numbered: false
+        };
+        let mut sim: Simulation<Player> = Simulation::new(params);
+        b.iter(|| {
+            sim.step();
+        });
     }
 
 }

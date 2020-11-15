@@ -1,3 +1,7 @@
+#![feature(test)]
+
+extern crate test;
+
 use crate::simulation::Simulation;
 use clap::{App, Arg, ArgMatches};
 use crate::parameters::{TagParams, DEFAULT_PARAMS};
@@ -52,6 +56,11 @@ fn main() {
             .long("directional_agent")
             .takes_value(false)
             .help("Have players/agents use a simple directional strategy."))
+        .arg(Arg::with_name("text_numbers")
+            .short("t")
+            .long("text_numbers")
+            .takes_value(false)
+            .help("Whether the players should be numbered in the UI."))
         .get_matches();
 
     log::info!("Starting up Tag Simulator.");
@@ -64,7 +73,8 @@ fn main() {
         width: extract("width", &matches, DEFAULT_PARAMS.width),
         height: extract("height", &matches, DEFAULT_PARAMS.height),
         num_players: extract("num_players", &matches, DEFAULT_PARAMS.num_players),
-        agent_type
+        agent_type,
+        numbered: matches.is_present("text_numbers")
     };
 
     match parameters.agent_type {

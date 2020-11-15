@@ -3,7 +3,6 @@ use crate::action::Action;
 use crate::parameters::TagParams;
 use crate::tag_environment::TagEnvironment;
 use iced_native::Point;
-use itertools::Itertools;
 use rand::{thread_rng, Rng};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -18,33 +17,32 @@ impl Agent for DirectionalAgent {
     /// If 'it', run to the nearest non-tagback not-'it'.
     fn act(&self, env: &TagEnvironment<Self>) -> Action {
         if self.player.is_it {
-            // TODO inefficient here
-            let mut sorted = env.agents.iter()
-                .filter(|player| !player.player.is_it && player.player.id != self.player.id && player.player.id != self.player.last_tagged)
-                .sorted_by(|a, b| self.player.distance(a.player).partial_cmp(&self.player.distance(b.player)).unwrap());
-            match sorted.next() {
-                None => {
-                    // Realistically should fail here.
-                    log::warn!("No eligible nearby players found; making random move.");
-                    self.player.random_move(env.width, env.height)
-                }
-                Some(other) => {
-                    if self.player.distance(other.player) <= self.player.reach {
+            let mut players = env.agents.iter();
+            let mut nearest = players.next().unwrap();
+            let mut nearest_distance = if self.player.can_tag(nearest.player) { nearest.player.distance(self.player) } else { f32::MAX };
+            for player in players {
+                if self.player.can_tag(player.player) {
+                    let dist = self.player.distance(player.player);
+                    if dist <= self.player.reach {
                         // Add the possibility of failed tags, mostly because players get caught in a loop of
                         // tagging each other in clusters otherwise -- TODO move and tag in single turn, or dealt with on its own if agents in own threads later.
                         return if thread_rng().gen_bool(0.8) {
-                            Action::Tag(other.player.id)
+                            Action::Tag(player.player.id)
                         } else {
                             log::info!("Tag missed!");
                             self.player.random_move(env.width, env.height)
                         }
                     }
-                    log::debug!("Moving towards {:?}", other.player.id);
-                    self.player.move_towards(other.player, env.width, env.height)
+                    if dist < nearest_distance {
+                        nearest_distance = dist;
+                        nearest = player;
+                    }
                 }
             }
+            log::debug!("Moving towards {:?}", nearest.player.id);
+            self.player.move_towards(nearest.player, env.width, env.height)
         } else {
-            let it = env.agents.iter().find(|player| player.player.is_it);
+            let it = env.agents.get(&env.it);
             match it {
                 None => {
                     log::warn!("No 'it' found; making random move.");
