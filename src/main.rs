@@ -2,8 +2,10 @@ use crate::simulation::Simulation;
 use clap::{App, Arg, ArgMatches};
 use crate::parameters::{TagParams, DEFAULT_PARAMS};
 use std::fmt::Debug;
+use crate::agents::agent_type::AgentType;
+use crate::agents::agent::Player;
+use crate::agents::basic_directional::DirectionalAgent;
 
-mod agent;
 mod environment;
 mod tag_environment;
 mod action;
@@ -12,6 +14,7 @@ mod simulation;
 mod iced_ui;
 mod controls;
 mod time;
+mod agents;
 
 fn main() {
     env_logger::init();
@@ -44,19 +47,34 @@ fn main() {
             .long("num_players")
             .takes_value(true)
             .help("The number of players/agents"))
+        .arg(Arg::with_name("directional_agent")
+            .short("d")
+            .long("directional_agent")
+            .takes_value(false)
+            .help("Have players/agents use a simple directional strategy."))
         .get_matches();
 
     log::info!("Starting up Tag Simulator.");
+
+    let agent_type = if matches.is_present("directional_agent") { AgentType::BasicDirectional } else { AgentType::Default };
 
     let parameters: TagParams = TagParams {
         speed: extract("speed", &matches, DEFAULT_PARAMS.speed),
         proximity: extract("proximity", &matches, DEFAULT_PARAMS.proximity),
         width: extract("width", &matches, DEFAULT_PARAMS.width),
         height: extract("height", &matches, DEFAULT_PARAMS.height),
-        num_players: extract("num_players", &matches, DEFAULT_PARAMS.num_players)
+        num_players: extract("num_players", &matches, DEFAULT_PARAMS.num_players),
+        agent_type
     };
 
-    Simulation::run_gui(parameters);
+    match parameters.agent_type {
+        AgentType::Default => {
+            Simulation::<Player>::run_gui(parameters);
+        },
+        AgentType::BasicDirectional => {
+            Simulation::<DirectionalAgent>::run_gui(parameters);
+        }
+    }
 
 }
 

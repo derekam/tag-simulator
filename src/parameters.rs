@@ -1,3 +1,5 @@
+use crate::agents::agent_type::AgentType;
+
 #[derive(Clone, Copy)]
 pub struct TagParams {
 
@@ -16,6 +18,7 @@ pub struct TagParams {
     /// The number of players/agents.
     pub num_players: usize,
 
+    pub agent_type: AgentType,
 }
 
 const SPEED: f64 = 5.0;
@@ -30,4 +33,5 @@ pub(crate) const DEFAULT_PARAMS: TagParams = TagParams {
     width: WIDTH,
     height: HEIGHT,
     num_players: NUM_PLAYERS,
+    agent_type: AgentType::Default
 };

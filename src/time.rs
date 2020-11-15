@@ -2,6 +2,7 @@ use iced::futures;
 use std::time::Instant;
 
 /// Helper functionality for dealing with subscriptions in Iced.
+/// This is all basically boilerplate that's pulled into the Iced libraries in the next version.
 pub fn every(duration: std::time::Duration) -> iced::Subscription<Instant> {
     iced::Subscription::from_recipe(Every(duration))
 }

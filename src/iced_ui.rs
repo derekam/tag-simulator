@@ -4,6 +4,7 @@ use crate::time;
 use std::time::{Instant};
 use crate::environment::Environment;
 use crate::parameters::TagParams;
+use crate::agents::agent::Agent;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -13,7 +14,7 @@ pub enum Message {
     Reset,
 }
 
-impl Application for Simulation {
+impl<X: Agent> Application for Simulation<X> {
     type Executor = executor::Default;
     type Message = Message;
     type Flags = TagParams;
@@ -35,15 +36,12 @@ impl Application for Simulation {
         match message {
             Message::Tick(_) | Message::Next => {
                 self.step();
-                self.cache.clear();
             }
             Message::TogglePlayback => {
                 self.is_running = !self.is_running;
             }
             Message::Reset => {
-                self.environment.reset();
-                self.player_setup();
-                self.cache.clear();
+                self.environment.reset(self.parameters);
             }
         }
 
@@ -52,6 +50,7 @@ impl Application for Simulation {
 
     fn subscription(&self) -> Subscription<Message> {
         if self.is_running {
+            // TODO throttle under load/large numbers of agents
             time::every(std::time::Duration::from_millis(10))
                 .map(|instant| Message::Tick(instant))
         } else {
@@ -66,7 +65,7 @@ impl Application for Simulation {
             .push(Canvas::new()
                       .width(Length::Fill)
                       .height(Length::Fill)
-                      .push(self.cache.with(&self.environment)),
+                      .push(self.environment.clone()),
             )
             .push(controls);
 
