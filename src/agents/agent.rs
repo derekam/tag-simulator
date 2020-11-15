@@ -97,17 +97,10 @@ impl Player {
     // TODO this and move_away are messy/repetitive and need to be cleaned up
     pub fn move_towards(&self, other: Player, max_width: f32, max_height: f32) -> Action {
         log::debug!("{:?} is moving towards {:?}", self.id, other.id);
-        let mut delta_x: f32 = other.position.x - self.position.x;
-        let mut delta_y: f32 = other.position.y - self.position.y;
-        if delta_y == 0. {
-            delta_y = thread_rng().gen_range(0.1, 1.0);
-        }
-        if delta_x == 0. {
-            delta_x = thread_rng().gen_range(0.1, 1.0);
-        }
-        let direction: f32 = (delta_y / delta_x).atan();
-        let x = if delta_x < 0. { self.position.x - (self.speed * direction.cos()).abs() } else { self.position.x + (self.speed * direction.cos()).abs() };
-        let y = if delta_y < 0. { self.position.y - (self.speed * direction.sin()).abs() } else { self.position.y + (self.speed * direction.sin()).abs() };
+        let delta = self.delta(other);
+        let direction: f32 = (delta[1] / delta[0]).atan();
+        let x = if delta[0] < 0. { self.position.x - (self.speed * direction.cos()).abs() } else { self.position.x + (self.speed * direction.cos()).abs() };
+        let y = if delta[1] < 0. { self.position.y - (self.speed * direction.sin()).abs() } else { self.position.y + (self.speed * direction.sin()).abs() };
         Action::Move(
             Point {
                 x: Player::clip(x, max_width),
@@ -117,20 +110,14 @@ impl Player {
     }
 
     /// Moves directly opposite to the line of sight between the player and the player to move away from.
-    /// TODO allow more variance in the angle to move at so that it stops running to corners immediately.
+    /// Might be a good idea to allow more variance in the angle to move at so that it stops running to corners immediately,
+    ///     but this is also less of an issue with higher numbers of players and 'it's.
     pub fn move_away(&self, other: Player, max_width: f32, max_height: f32) -> Action {
         log::debug!("{:?} is moving away from  {:?}", self.id, other.id);
-        let mut delta_x: f32 = other.position.x - self.position.x;
-        let mut delta_y: f32 = other.position.y - self.position.y;
-        if delta_y == 0. {
-            delta_y = thread_rng().gen_range(0.1, 1.0);
-        }
-        if delta_x == 0. {
-            delta_x = thread_rng().gen_range(0.1, 1.0);
-        }
-        let direction: f32 = (-delta_y / -delta_x).atan();
-        let x = if delta_x < 0. { self.position.x + (self.speed * direction.cos()).abs() } else { self.position.x - (self.speed * direction.cos()).abs() };
-        let y =  if delta_y < 0. { self.position.y + (self.speed * direction.sin()).abs() } else { self.position.y - (self.speed * direction.sin()).abs() };
+        let delta = self.delta(other);
+        let direction: f32 = (-delta[1] / -delta[0]).atan();
+        let x = if delta[0] < 0. { self.position.x + (self.speed * direction.cos()).abs() } else { self.position.x - (self.speed * direction.cos()).abs() };
+        let y =  if delta[1] < 0. { self.position.y + (self.speed * direction.sin()).abs() } else { self.position.y - (self.speed * direction.sin()).abs() };
         Action::Move(
             Point {
                 x: Player::clip(x, max_width),
@@ -156,6 +143,18 @@ impl Player {
         f32::max(0.0, f32::min(max_value, value))
     }
 
+    fn delta(&self, other: Player) -> [f32; 2] {
+        let mut delta_x: f32 = other.position.x - self.position.x;
+        let mut delta_y: f32 = other.position.y - self.position.y;
+        if delta_y == 0. {
+            delta_y = thread_rng().gen_range(0.1, 1.0);
+        }
+        if delta_x == 0. {
+            delta_x = thread_rng().gen_range(0.1, 1.0);
+        }
+        [delta_x, delta_y]
+    }
+
 }
 
 #[cfg(test)]
@@ -168,6 +167,7 @@ mod tests {
     use iced::Point;
     use crate::agents::agent::{Player, Agent};
     use crate::parameters::DEFAULT_PARAMS;
+    use std::collections::HashSet;
 
     #[test]
     fn no_tag_backs() {
@@ -175,7 +175,7 @@ mod tests {
             agents: DashMap::with_capacity(2),
             width: 2.,
             height: 2.,
-            it: 0,
+            it: HashSet::new(),
             show_numbers: false
         };
         let mut agent1: Player = Player {

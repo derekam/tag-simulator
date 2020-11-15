@@ -4,13 +4,14 @@ use crate::parameters::TagParams;
 use crate::tag_environment::TagEnvironment;
 use iced_native::Point;
 use rand::{thread_rng, Rng};
+use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DirectionalAgent {
     pub player: Player,
 }
 
-/// A simple tag strategy to run from 'it' or towards non-'its'.
+/// A simple tag strategy to run from 'it's or towards non-'it's.
 impl Agent for DirectionalAgent {
 
     /// If not 'it', run from the nearest 'it'.
@@ -25,7 +26,7 @@ impl Agent for DirectionalAgent {
                     let dist = self.player.distance(player.player);
                     if dist <= self.player.reach {
                         // Add the possibility of failed tags, mostly because players get caught in a loop of
-                        // tagging each other in clusters otherwise -- TODO move and tag in single turn, or dealt with on its own if agents in own threads later.
+                        // tagging each other in clusters otherwise -- TODO move and tag in single turn(?), or dealt with on its own if agents in own threads later.
                         return if thread_rng().gen_bool(0.8) {
                             Action::Tag(player.player.id)
                         } else {
@@ -42,14 +43,19 @@ impl Agent for DirectionalAgent {
             log::debug!("Moving towards {:?}", nearest.player.id);
             self.player.move_towards(nearest.player, env.width, env.height)
         } else {
-            let it = env.agents.get(&env.it);
-            match it {
+            let mut nearest_it = env.it.iter()
+                .filter(|player| env.agents.get(player).unwrap().player.last_tagged != self.player.id)
+                .sorted_by(|a, b| {
+                    self.player.distance(env.agents.get(a).unwrap().player)
+                        .partial_cmp(&self.player.distance(env.agents.get(b).unwrap().player)).unwrap()
+                });
+            match nearest_it.next() {
                 None => {
                     log::warn!("No 'it' found; making random move.");
                     self.player.random_move(env.width, env.height)
                 }
                 Some(it) => {
-                    self.player.move_away(it.player, env.width, env.height)
+                    self.player.move_away(env.agents.get(it).unwrap().player, env.width, env.height)
                 }
             }
         }

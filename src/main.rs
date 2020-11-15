@@ -51,6 +51,11 @@ fn main() {
             .long("num_players")
             .takes_value(true)
             .help("The number of players/agents"))
+        .arg(Arg::with_name("num_it")
+            .short("i")
+            .long("num_it")
+            .takes_value(true)
+            .help("The number of players/agents that are it."))
         .arg(Arg::with_name("directional_agent")
             .short("d")
             .long("directional_agent")
@@ -67,15 +72,18 @@ fn main() {
 
     let agent_type = if matches.is_present("directional_agent") { AgentType::BasicDirectional } else { AgentType::Default };
 
-    let parameters: TagParams = TagParams {
+    let mut parameters: TagParams = TagParams {
         speed: extract("speed", &matches, DEFAULT_PARAMS.speed),
         proximity: extract("proximity", &matches, DEFAULT_PARAMS.proximity),
         width: extract("width", &matches, DEFAULT_PARAMS.width),
         height: extract("height", &matches, DEFAULT_PARAMS.height),
         num_players: extract("num_players", &matches, DEFAULT_PARAMS.num_players),
         agent_type,
-        numbered: matches.is_present("text_numbers")
+        numbered: matches.is_present("text_numbers"),
+        num_it: extract("num_it", &matches, DEFAULT_PARAMS.num_it),
     };
+
+    parameters.num_it = usize::min(parameters.num_it, parameters.num_players);
 
     match parameters.agent_type {
         AgentType::Default => {

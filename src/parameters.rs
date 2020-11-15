@@ -24,6 +24,9 @@ pub struct TagParams {
     /// Whether the rendered players should be numbered (has a performance cost).
     pub numbered: bool,
 
+    /// The number of players that are 'it'.
+    pub num_it: usize,
+
 }
 
 const SPEED: f64 = 5.0;
@@ -31,6 +34,7 @@ const PROXIMITY: f64 = 15.0;
 const WIDTH: u64 = 1000;
 const HEIGHT: u64 = 600;
 const NUM_PLAYERS: usize = 50;
+const NUM_IT: usize = 1;
 
 pub(crate) const DEFAULT_PARAMS: TagParams = TagParams {
     speed: SPEED,
@@ -39,5 +43,6 @@ pub(crate) const DEFAULT_PARAMS: TagParams = TagParams {
     height: HEIGHT,
     num_players: NUM_PLAYERS,
     agent_type: AgentType::Default,
-    numbered: false
+    numbered: false,
+    num_it: NUM_IT,
 };
