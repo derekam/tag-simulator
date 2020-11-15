@@ -16,7 +16,7 @@ pub struct Player {
     pub reach: f32,
 }
 
-pub trait Agent: Sized + Debug + Copy {
+pub trait Agent: Sized + Debug + Copy + Clone + PartialEq {
     
     fn act(&self, env: &TagEnvironment<Self>) -> Action;
 
@@ -40,8 +40,7 @@ impl Agent for Player {
     fn act(&self, env: &TagEnvironment<Player>) -> Action {
         if self.is_it {
             for agent in &env.agents {
-                if !agent.is_it && agent.id != self.id &&
-                    agent.id != self.last_tagged &&
+                if self.can_tag(*agent) &&
                     self.distance(*agent) <= self.reach {
                     return Action::Tag(agent.id)
                 }
@@ -91,16 +90,20 @@ impl Player {
         return ((self.position.x - other.position.x).abs().powf(2.) + (self.position.y - other.position.y).abs().powf(2.)).sqrt()
     }
 
+    pub fn can_tag(&self, other: Player) -> bool {
+        !other.is_it && other.id != self.id && other.id != self.last_tagged
+    }
+
     // TODO this and move_away are messy/repetitive and need to be cleaned up
     pub fn move_towards(&self, other: Player, max_width: f32, max_height: f32) -> Action {
         log::debug!("{:?} is moving towards {:?}", self.id, other.id);
         let mut delta_x: f32 = other.position.x - self.position.x;
         let mut delta_y: f32 = other.position.y - self.position.y;
-        while delta_y == 0. {
-            delta_y = thread_rng().gen();
+        if delta_y == 0. {
+            delta_y = thread_rng().gen_range(0.1, 1.0);
         }
-        while delta_x == 0. {
-            delta_x = thread_rng().gen();
+        if delta_x == 0. {
+            delta_x = thread_rng().gen_range(0.1, 1.0);
         }
         let direction: f32 = (delta_y / delta_x).atan();
         let x = if delta_x < 0. { self.position.x - (self.speed * direction.cos()).abs() } else { self.position.x + (self.speed * direction.cos()).abs() };
@@ -119,11 +122,11 @@ impl Player {
         log::debug!("{:?} is moving away from  {:?}", self.id, other.id);
         let mut delta_x: f32 = other.position.x - self.position.x;
         let mut delta_y: f32 = other.position.y - self.position.y;
-        while delta_y == 0. {
-            delta_y = thread_rng().gen();
+        if delta_y == 0. {
+            delta_y = thread_rng().gen_range(0.1, 1.0);
         }
-        while delta_x == 0. {
-            delta_x = thread_rng().gen();
+        if delta_x == 0. {
+            delta_x = thread_rng().gen_range(0.1, 1.0);
         }
         let direction: f32 = (-delta_y / -delta_x).atan();
         let x = if delta_x < 0. { self.position.x + (self.speed * direction.cos()).abs() } else { self.position.x - (self.speed * direction.cos()).abs() };
@@ -171,7 +174,9 @@ mod tests {
         let env: TagEnvironment<Player> = TagEnvironment {
             agents: DashMap::with_capacity(2),
             width: 2.,
-            height: 2.
+            height: 2.,
+            it: 0,
+            show_numbers: false
         };
         let mut agent1: Player = Player {
             id: 1,

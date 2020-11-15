@@ -1,4 +1,3 @@
-use dashmap::DashMap;
 use crate::action::Action;
 use crate::environment::Environment;
 use std::borrow::Borrow;
@@ -11,15 +10,22 @@ use iced::widget::canvas::Layer;
 use async_std::sync::Arc;
 use iced_native::Size;
 use iced_wgpu::Primitive;
+use dashmap::DashMap;
 
+/// The state of the environment of the simulation.
 #[derive(Debug, Clone)]
 pub struct TagEnvironment<P>
 where
     P: Agent
 {
+    // Just having a map like this really isn't ideal;
+    //  this should be broken into a grid of buckets,
+    //  or something like an R* tree.
     pub(crate) agents: DashMap<usize, P>,
     pub(crate) width: f32,
     pub(crate) height: f32,
+    pub(crate) it: usize,
+    pub(crate) show_numbers: bool,
 }
 
 impl<P> Environment<Action, P> for TagEnvironment<P>
@@ -28,6 +34,7 @@ impl<P> Environment<Action, P> for TagEnvironment<P>
 {
 
     fn reset(&mut self, params: TagParams) {
+        self.show_numbers = params.numbered;
         self.agents.clear();
         let mut rng = thread_rng();
 
@@ -36,6 +43,7 @@ impl<P> Environment<Action, P> for TagEnvironment<P>
         };
 
         let it: usize = rng.gen_range(0, params.num_players);
+        self.it = it;
         log::info!("Starting with player {:?} marked it.", it);
         self.agents.get_mut(&it).unwrap().tag(it);
     }
@@ -56,6 +64,7 @@ impl<P> Environment<Action, P> for TagEnvironment<P>
             Action::Tag(other) => {
                 self.agents.get_mut(&agent).unwrap().untag();
                 self.agents.get_mut(&other).unwrap().tag(agent);
+                self.it = *other;
                 log::info!("Agent {:?} has tagged agent {:?}.", agent, other)
             }
             Action::Move(position) => {
@@ -94,14 +103,16 @@ impl<P> TagEnvironment<P>
         frame.fill(&space, Color::BLACK);
 
         for agent in &self.agents {
-            frame.fill_text(canvas::Text {
-                content: agent.player().id.to_string(),
-                position: agent.player().position,
-                horizontal_alignment: HorizontalAlignment::Center,
-                vertical_alignment: VerticalAlignment::Center,
-                size: 15.0,
-                ..canvas::Text::default()
-            });
+            if self.show_numbers {
+                frame.fill_text(canvas::Text {
+                    content: agent.player().id.to_string(),
+                    position: agent.player().position,
+                    horizontal_alignment: HorizontalAlignment::Center,
+                    vertical_alignment: VerticalAlignment::Center,
+                    size: 15.0,
+                    ..canvas::Text::default()
+                });
+            }
             if !agent.player().is_it {
                 frame.fill(&Path::circle(agent.player().position, agent.player().reach), Color::WHITE);
             } else {
@@ -162,6 +173,8 @@ mod tests {
             agents: DashMap::with_capacity(3),
             width: 2.,
             height: 2.,
+            it: 0,
+            show_numbers: false
         };
         let agent0: Player = Player {
             id: 0,

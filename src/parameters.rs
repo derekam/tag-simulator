@@ -18,7 +18,12 @@ pub struct TagParams {
     /// The number of players/agents.
     pub num_players: usize,
 
+    /// What type of agent the players should use.
     pub agent_type: AgentType,
+
+    /// Whether the rendered players should be numbered (has a performance cost).
+    pub numbered: bool,
+
 }
 
 const SPEED: f64 = 5.0;
@@ -33,5 +38,6 @@ pub(crate) const DEFAULT_PARAMS: TagParams = TagParams {
     width: WIDTH,
     height: HEIGHT,
     num_players: NUM_PLAYERS,
-    agent_type: AgentType::Default
+    agent_type: AgentType::Default,
+    numbered: false
 };
