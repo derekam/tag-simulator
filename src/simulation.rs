@@ -6,6 +6,7 @@ use crate::action::Action;
 use crate::controls::Controls;
 use iced::{Application, Settings, window};
 use crate::agents::agent::Agent;
+use std::collections::HashSet;
 
 /// The main tag simulation instance.
 ///
@@ -39,7 +40,7 @@ impl<X: Agent + 'static> Simulation<X> {
                         agents: DashMap::with_capacity(parameters.speed as usize),
                         width: parameters.width as f32,
                         height: parameters.height as f32,
-                        it: 0,
+                        it: HashSet::new(),
                         show_numbers: parameters.numbered,
                     },
                     is_running: false,
@@ -88,7 +89,7 @@ impl<X: Agent + 'static> Simulation<X> {
     }
 
     pub(crate) fn step(&mut self) {
-        // TODO something like a countdown latch here, or abandon turn-based altogether and have agents in their own threads.
+        // TODO something like a countdown latch here or Rayon iters, or abandon turn-based altogether and have agents in their own threads.
         let mut actions: Vec<Action> = Vec::with_capacity(self.environment.agents.len());
         for agent in 0..self.environment.agents.len() {
             actions.insert(agent, self.environment.agents.get(&agent).unwrap().act(&self.environment));
@@ -116,7 +117,8 @@ mod tests {
             height: 100,
             num_players: 5,
             agent_type: AgentType::Default,
-            numbered: false
+            numbered: false,
+            num_it: 1
         };
         let mut sim: Simulation<Player> = Simulation::new(params);
         assert_eq!(sim.is_running, false);
@@ -137,7 +139,8 @@ mod tests {
             height: 600,
             num_players: 500,
             agent_type: AgentType::BasicDirectional,
-            numbered: false
+            numbered: false,
+            num_it: 1
         };
         let mut sim: Simulation<DirectionalAgent> = Simulation::new(params);
         b.iter(|| {
@@ -154,7 +157,8 @@ mod tests {
             height: 600,
             num_players: 5000,
             agent_type: AgentType::BasicDirectional,
-            numbered: false
+            numbered: false,
+            num_it: 1
         };
         let mut sim: Simulation<DirectionalAgent> = Simulation::new(params);
         b.iter(|| {
@@ -171,7 +175,8 @@ mod tests {
             height: 600,
             num_players: 500,
             agent_type: AgentType::Default,
-            numbered: false
+            numbered: false,
+            num_it: 1
         };
         let mut sim: Simulation<Player> = Simulation::new(params);
         b.iter(|| {
@@ -189,7 +194,8 @@ mod tests {
             height: 600,
             num_players: 5000,
             agent_type: AgentType::Default,
-            numbered: false
+            numbered: false,
+            num_it: 1
         };
         let mut sim: Simulation<Player> = Simulation::new(params);
         b.iter(|| {
@@ -206,7 +212,8 @@ mod tests {
             height: 600,
             num_players: 50000,
             agent_type: AgentType::Default,
-            numbered: false
+            numbered: false,
+            num_it: 1
         };
         let mut sim: Simulation<Player> = Simulation::new(params);
         b.iter(|| {

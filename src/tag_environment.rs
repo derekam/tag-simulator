@@ -11,6 +11,7 @@ use async_std::sync::Arc;
 use iced_native::Size;
 use iced_wgpu::Primitive;
 use dashmap::DashMap;
+use std::collections::HashSet;
 
 /// The state of the environment of the simulation.
 #[derive(Debug, Clone)]
@@ -24,7 +25,7 @@ where
     pub(crate) agents: DashMap<usize, P>,
     pub(crate) width: f32,
     pub(crate) height: f32,
-    pub(crate) it: usize,
+    pub(crate) it: HashSet<usize>,
     pub(crate) show_numbers: bool,
 }
 
@@ -42,10 +43,17 @@ impl<P> Environment<Action, P> for TagEnvironment<P>
             self.add_agent(P::create(agent, params))
         };
 
-        let it: usize = rng.gen_range(0, params.num_players);
-        self.it = it;
-        log::info!("Starting with player {:?} marked it.", it);
-        self.agents.get_mut(&it).unwrap().tag(it);
+        self.it.clear();
+        let mut to_pick = params.num_it;
+        while to_pick > 0 {
+            let it: usize = rng.gen_range(0, params.num_players);
+            if self.it.insert(it) {
+                log::info!("Starting with player {:?} marked it.", it);
+                self.agents.get_mut(&it).unwrap().tag(it);
+                to_pick -= 1;
+            }
+        }
+
     }
 
     fn add_agent(&mut self, agent: P) {
@@ -64,7 +72,8 @@ impl<P> Environment<Action, P> for TagEnvironment<P>
             Action::Tag(other) => {
                 self.agents.get_mut(&agent).unwrap().untag();
                 self.agents.get_mut(&other).unwrap().tag(agent);
-                self.it = *other;
+                self.it.remove(&agent);
+                self.it.insert(*other);
                 log::info!("Agent {:?} has tagged agent {:?}.", agent, other)
             }
             Action::Move(position) => {
@@ -134,6 +143,7 @@ mod tests {
     use iced::Point;
     use crate::agents::agent::{Player, Agent};
     use crate::parameters::DEFAULT_PARAMS;
+    use std::collections::HashSet;
 
     #[test]
     fn can_setup_env() {
@@ -173,7 +183,7 @@ mod tests {
             agents: DashMap::with_capacity(3),
             width: 2.,
             height: 2.,
-            it: 0,
+            it: HashSet::new(),
             show_numbers: false
         };
         let agent0: Player = Player {

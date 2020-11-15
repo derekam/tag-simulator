@@ -50,8 +50,8 @@ impl<X: Agent> Application for Simulation<X> {
 
     fn subscription(&self) -> Subscription<Message> {
         if self.is_running {
-            // TODO throttle under load/large numbers of agents
-            time::every(std::time::Duration::from_millis(10))
+            // throttle to update less frequently under load/large numbers of agents
+            time::every(std::time::Duration::from_millis(((self.parameters.num_players / 50) * 10) as u64))
                 .map(|instant| Message::Tick(instant))
         } else {
             Subscription::none()

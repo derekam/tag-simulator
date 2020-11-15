@@ -20,12 +20,13 @@ You may want to run with logging enabled at a higher level than the 'error' defa
 * **Height** (-h, --height, u64): The height of the playing field.
 * **Width** (-w, --width, u64): The width of the playing field.
 * **Num Players** (-n, --num_players, usize): The number of players in the game.
+* **Num It** (-i, --num_it, usize): The number of players that are 'it'.
 * **Directional Agent** (-d, --directional_agent, flag): Have players run towards/away from others instead of moving randomly.
 * **Text Numbers** (-t, --text_numbers, flag): Show the text number id of each player (has a performance cost).
 
 Example usage of the command line:
 ```
-$ RUST_LOG=info RUST_BACKTRACE=1 cargo +nightly run -- -s 5.0 -p 15.0 -w 1000 -h 600 -n 50 -t -d
+$ RUST_LOG=info RUST_BACKTRACE=1 cargo +nightly run -- -s 5.0 -p 15.0 -w 1000 -h 600 -n 100 -t -d -i 15
 ```
 
 ## Troubleshooting
