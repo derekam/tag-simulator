@@ -83,7 +83,7 @@ fn main() {
         num_it: extract("num_it", &matches, DEFAULT_PARAMS.num_it),
     };
 
-    parameters.num_it = usize::min(parameters.num_it, parameters.num_players);
+    parameters.num_it = usize::min(parameters.num_it, parameters.num_players - 1);
 
     match parameters.agent_type {
         AgentType::Default => {

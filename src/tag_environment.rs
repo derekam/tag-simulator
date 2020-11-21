@@ -68,13 +68,17 @@ impl<P> Environment<Action, P> for TagEnvironment<P>
     }
 
     fn step(&mut self, agent: usize, action: &Action) {
+        log::debug!("Applying action {:?} from agent {:?}", action, agent);
         match action {
             Action::Tag(other) => {
-                self.agents.get_mut(&agent).unwrap().untag();
-                self.agents.get_mut(&other).unwrap().tag(agent);
-                self.it.remove(&agent);
-                self.it.insert(*other);
-                log::info!("Agent {:?} has tagged agent {:?}.", agent, other)
+                if self.it.insert(*other) {
+                    self.agents.get_mut(&agent).unwrap().untag();
+                    self.agents.get_mut(&other).unwrap().tag(agent);
+                    self.it.remove(&agent);
+                    log::info!("Agent {:?} has tagged agent {:?}.", agent, other)
+                } else {
+                    log::info!("{:?} has already been tagged.", *other);
+                }
             }
             Action::Move(position) => {
                 self.agents.get_mut(&agent).unwrap().update(position);
@@ -144,6 +148,7 @@ mod tests {
     use crate::agents::agent::{Player, Agent};
     use crate::parameters::DEFAULT_PARAMS;
     use std::collections::HashSet;
+    use crate::action::Action::Tag;
 
     #[test]
     fn can_setup_env() {
@@ -219,10 +224,21 @@ mod tests {
             speed: 2.0,
             reach: 2.0
         };
+        env.it.insert(0);
         env.add_agent( agent0);
         env.add_agent( agent1);
         env.add_agent( agent2);
         env
+    }
+
+    #[test]
+    fn multiple_tag_same() {
+        let mut env: TagEnvironment<Player> = base_env();
+        let act = Tag(2);
+        env.step(1, &act);
+        assert_eq!(2, env.it.len());
+        env.step(0, &act);
+        assert_eq!(2, env.it.len());
     }
 
 }
