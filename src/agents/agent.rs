@@ -267,6 +267,49 @@ mod tests {
     }
 
     #[test]
+    pub fn distances() {
+        let one = Player {
+            id: 1,
+            is_it: false,
+            last_tagged: 1,
+            position: Point {
+                x: 0.0,
+                y: 0.0
+            },
+            speed: 1.0,
+            reach: 1.0
+        };
+        let two = Player {
+            id: 2,
+            is_it: true,
+            last_tagged: 2,
+            position: Point {
+                x: 0.1,
+                y: 0.1
+            },
+            speed: 1.0,
+            reach: 1.0
+        };
+        let three = Player {
+            id: 3,
+            is_it: true,
+            last_tagged: 3,
+            position: Point {
+                x: 0.0,
+                y: 0.0
+            },
+            speed: 1.0,
+            reach: 1.0
+        };
+        let mut dist = three.distance(one);
+        assert_eq!(0.0, dist);
+        dist = two.distance(one);
+        assert!(dist < 1.0);
+        dist = one.distance(two);
+        assert!(dist < 1.0);
+    }
+
+    #[test]
     pub fn move_away() {
         let mut tagged = Player {
             id: 1,

@@ -21,18 +21,14 @@ impl Agent for DirectionalAgent {
             let mut players = env.agents.iter();
             let mut nearest = players.next().unwrap();
             let mut nearest_distance = if self.player.can_tag(nearest.player) { nearest.player.distance(self.player) } else { f32::MAX };
+            if nearest_distance <= self.player.reach {
+                return self.tag(*nearest, env);
+            }
             for player in players {
                 if self.player.can_tag(player.player) {
                     let dist = self.player.distance(player.player);
                     if dist <= self.player.reach {
-                        // Add the possibility of failed tags, mostly because players get caught in a loop of
-                        // tagging each other in clusters otherwise -- TODO move and tag in single turn(?), or dealt with on its own if agents in own threads later.
-                        return if thread_rng().gen_bool(0.8) {
-                            Action::Tag(player.player.id)
-                        } else {
-                            log::info!("Tag missed!");
-                            self.player.random_move(env.width, env.height)
-                        }
+                        return self.tag(*player, env);
                     }
                     if dist < nearest_distance {
                         nearest_distance = dist;
@@ -81,6 +77,89 @@ impl Agent for DirectionalAgent {
 
     fn untag(&mut self) {
         self.player.untag()
+    }
+
+}
+
+impl DirectionalAgent {
+
+    fn tag(&self, other: Self, env: &TagEnvironment<Self>) -> Action {
+        // Add the possibility of failed tags, mostly because players get caught in a loop of
+        // tagging each other in clusters otherwise -- TODO move and tag in single turn(?), or dealt with on its own if agents in own threads later.
+        return if thread_rng().gen_bool(0.8) {
+            Action::Tag(other.player.id)
+        } else {
+            log::info!("Tag missed!");
+            self.player.random_move(env.width, env.height)
+        }
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tag_environment::TagEnvironment;
+    use crate::agents::basic_directional::DirectionalAgent;
+    use dashmap::DashMap;
+    use std::collections::HashSet;
+    use crate::agents::agent::{Player, Agent};
+    use iced::Point;
+    use crate::environment::Environment;
+    use crate::action::Action::Tag;
+
+    #[test]
+    fn tag_zero() {
+        let env = base_env();
+        let player = env.agents.get(&1).unwrap();
+        let mut passed = false;
+        for _ in 0..10 {
+            let action = player.act(&env);
+            if action.eq(&Tag(0)) {
+                passed = true;
+                break;
+            }
+        }
+        assert!(passed);
+    }
+
+    fn base_env() -> TagEnvironment<DirectionalAgent> {
+        let mut env: TagEnvironment<DirectionalAgent> = TagEnvironment {
+            agents: DashMap::with_capacity(2),
+            width: 2.,
+            height: 2.,
+            it: HashSet::new(),
+            show_numbers: false
+        };
+        let agent0: DirectionalAgent = DirectionalAgent {
+            player: Player {
+                id: 0,
+                is_it: false,
+                last_tagged: 0,
+                position: Point {
+                    x: 0.0,
+                    y: 0.0,
+                },
+                speed: 2.0,
+                reach: 2.0
+            }
+        };
+        let agent1: DirectionalAgent = DirectionalAgent {
+            player: Player {
+                id: 1,
+                is_it: true,
+                last_tagged: 1,
+                position: Point {
+                    x: 0.5,
+                    y: 0.5,
+                },
+                speed: 2.0,
+                reach: 2.0
+            }
+        };
+        env.it.insert(1);
+        env.add_agent( agent0);
+        env.add_agent( agent1);
+        env
     }
 
 }
